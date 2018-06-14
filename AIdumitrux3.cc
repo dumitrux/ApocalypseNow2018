@@ -28,13 +28,14 @@ struct PLAYER_NAME : public Player {
 	static constexpr int HI[5] = {-2, -1, 0, 1, 2};
 	static constexpr int HJ[5] = {-2, -1, 0, 1, 2};
 	
-	typedef vector<int> vec;
-	typedef vector<vector<int> > tablero;
-	
+	// Movimientos permitidos para los helicopteros
 	static constexpr int HI2[4] = { 1, 0, -1, 0 };
 	static constexpr int HJ2[4] = { 0, 1, 0, -1 };
 	
+	typedef vector<int> vec;
+	typedef vector<vector<int> > tablero;
 	
+	// Devuelve cierto si es una posicion valida para el helicopteros
 	bool posicion_segura_h(int x, int y) {
 		bool correcta = true;
 		int i, j;
@@ -52,23 +53,6 @@ struct PLAYER_NAME : public Player {
 		return correcta;
 	}
 	
-	/*bool hay_h(Position pos) {
-		bool correcta = true;
-		int i, j;
-		i = j = 0;
-		while (i < 5 and correcta) {
-			while (j < 5 and correcta) {
-				Position h;
-				h.i = pos.i + HI[i]; 
-				h.j = pos.j + HJ[j];
-				correcta = (which_helicopter(pos.i, pos.j) == 0);
-				++j;
-			}
-			++i;
-		}
-		return correcta;
-	}*/
-	
 	// Devuelve si la celda es cesped o bosque, no hay fuego y no hay un soldado propio
 	bool posicio_segura(Position pos, int id) {
 		int tipo_suelo, fuego, mi_jugador, jugador2;
@@ -80,6 +64,7 @@ struct PLAYER_NAME : public Player {
 		jugador2 != mi_jugador and jugador2 >= 0);
 	}
 	
+	// Devuelve cierto si ataca. Ataca si hay un soldado enemigo en una celda adyacente
 	bool atacar(int id) {
 		Data s = data(id);
 		Position pos_s;
@@ -105,6 +90,7 @@ struct PLAYER_NAME : public Player {
 		return atacar;
 	}
 	
+	// Devuelve el numero de celdas de alrededor que sean bosque y esten ardiendo
 	int fuego_alrededor(Position pos) {
 		int k, fuego;
 		k = fuego = 0;
@@ -120,6 +106,7 @@ struct PLAYER_NAME : public Player {
 		return fuego;
 	}
 	
+	// Devuelve cierto si hay un soldado enemigo adyacente a la celda
 	bool enemigo_alrededor(Position pos) {
 		int mi_jugador = me();
 		int k = 0;
@@ -175,11 +162,11 @@ struct PLAYER_NAME : public Player {
 		}
 		vector<Position> posibles;
 		vector<int> valor_fuego;
-		rumbo = ruta.top();// post
+		rumbo = ruta.top();// Post encontrado
 		
 		ruta.pop();
 		Position destino2;
-		while (ruta.size() > 1) {
+		while (ruta.size() > 1) {// Como llegar al post
 			Position ady;
 			bool adyacente, nivel;
 			adyacente = false;
@@ -194,7 +181,8 @@ struct PLAYER_NAME : public Player {
 				ady = ruta.top();
 				++k;
 			}
-			
+			// Guarda las posibles celdas que pueden ir el soldado
+			// para llegar a la segunda celda de camino al post 
 			if(busqueda[ady.i][ady.j] == 1) {
 				while(ruta.size() > 1) {
 					Position x = ruta.top();
@@ -227,6 +215,8 @@ struct PLAYER_NAME : public Player {
 		int nn2 = posibles2.size();
 		valor_fuego = vector<int>(nn2);
 		for (int i = 0; i < nn2; ++i) {
+			// Numero de celdas con fuego alrededor de un post
+			// con el mismo indice que posibles2
 			valor_fuego[i] = fuego_alrededor(posibles2[i]);
 		}
 		
@@ -234,10 +224,14 @@ struct PLAYER_NAME : public Player {
 		int k;
 		k = 0;
 		int que;
-		if(posibles2.empty()) {
+		if(posibles2.empty()) {// La siguiente celda es el post
 			command_soldier(id, rumbo.i, rumbo.j);
 			coms = true;
 		}
+		
+		// Con las siguientes comprobaciones se "convierte bfs a un mini-Dijkstra",
+		// con los posibles caminos a la proxima celda se elije el mejor,
+		// seguno enemigos, fuego alrededor y tipo de terreno
 		while (k < nn2 and !coms) {
 			que = what(posibles2[k].i, posibles2[k].j);
 			if(que == FOREST and !enemigo_alrededor(posibles2[k]) 
@@ -318,6 +312,7 @@ struct PLAYER_NAME : public Player {
 		}
 	}
 	
+	// Tira un nombre dado de paracaidistas en zona segura si puede
 	void throw_parachuter(int id, int para, int p) {
 		Data h = data(id);
 		int p_tirados = 0;
@@ -341,7 +336,7 @@ struct PLAYER_NAME : public Player {
 		}
 	}
 	
-	// Cerca == 2 casillas
+	// Devuelve cierto si un helicoptero tiene un post a dos casillas o menos
 	bool post_cerca(Position pos) {
 		bool cerca = false;
 		int i, j, mi_jugador;
@@ -362,6 +357,7 @@ struct PLAYER_NAME : public Player {
 		return cerca;
 	}
 	
+	// Devuelve cierto si el helicoptero ha tirado napalm
 	bool tirar_napalm(int id) {
 		Data h = data(id);
 		int enemigos, mis_sold, mi_jugador;
@@ -382,7 +378,7 @@ struct PLAYER_NAME : public Player {
 				}
 			}
 			if (mis_sold < enemigos and enemigos > 2) {
-				// lanzar napalm
+				// Lanzar napalm
 				command_helicopter(id, NAPALM);
 				napalm = true;
 			}
@@ -390,6 +386,7 @@ struct PLAYER_NAME : public Player {
 		return napalm;
 	}
 	
+	// bfs para encontrar camino a un post
 	void play_helicopter(int id) {
 		Data h = data(id);
 		Position pos = h.pos;
@@ -421,9 +418,9 @@ struct PLAYER_NAME : public Player {
 				}
 			}
 		}
-		rumbo = ruta.top();// post
+		rumbo = ruta.top();// Post
 		ruta.pop();
-		while (ruta.size() > 1) {
+		while (ruta.size() > 1) {// Recorre camino al post
 			Position ady;
 			bool adyacente, nivel;
 			adyacente = false;
@@ -441,7 +438,7 @@ struct PLAYER_NAME : public Player {
 			if (adyacente) rumbo = ady;
 		}
 		
-		if (post_cerca(pos)) {
+		if (post_cerca(pos)) { // Si hay post cerca se mueve alrededor
 			bool movh = false;
 			if (!movh and posicion_segura_h(pos.i+1, pos.j) and h.orientation == 0) {
 				command_helicopter(id, FORWARD1);
@@ -461,6 +458,8 @@ struct PLAYER_NAME : public Player {
 			}
 			if(!movh) command_helicopter(id, CLOCKWISE);
 		}
+		
+		// Segun el siguiente movimiento y la orientacion se elige el movimiento
 		else if ((rumbo.i == pos.i+1 and rumbo.j == pos.j and h.orientation == 0 and posicion_segura_h(pos.i+1, pos.j)) or
 		(rumbo.i == pos.i and rumbo.j == pos.j+1 and h.orientation == 1 and posicion_segura_h(pos.i, pos.j+1)) or
 		(rumbo.i == pos.i-1 and rumbo.j == pos.j and h.orientation == 2 and posicion_segura_h(pos.i-1, pos.j)) or
@@ -484,6 +483,8 @@ struct PLAYER_NAME : public Player {
 	  }
 	  
 	  // Helicopteros
+	  
+	  // Se elige cuantos paracaidistas tirar en cada helicoptero
 	  int p1, p2;
 	  p1 = data(H[0]).parachuters.size();
 	  p2 = data(H[1]).parachuters.size();
